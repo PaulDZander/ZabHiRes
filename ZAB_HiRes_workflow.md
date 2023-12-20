@@ -1,33 +1,18 @@
----
-title: "ZABHiRes Workflow"
-subtitle: "Code for analyses in 'Seasonal climate signals preserved in biochemical varves: insights from novel high-resolution sediment scanning techniques'"
-output:
-  html_document:
-    highlight: tango
-    theme: flatly
-    df_print: paged
-    toc: yes
-    toc_float: no
-    code_folding: "hide"
-  html_notebook:
-    highlight: tango
-    theme: flatly
-    toc: yes
-    toc_float: no
-    code_folding: "hide"
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+ZABHiRes Workflow
+================
 
 ## Introduction
 
-This is an R Markdown document that documents data analyses for the manuscript Zander et al (Seasonal climate signals preserved in biochemical varves: insights from novel high-resolution sediment scanning techniques). For full interpretation of the data and plots contained here, please see the associated manuscript. Any use of data and plots should refer to Zander et al.
+This is an R Markdown document that documents data analyses for the
+manuscript Zander et al (Seasonal climate signals preserved in
+biochemical varves: insights from novel high-resolution sediment
+scanning techniques). For full interpretation of the data and plots
+contained here, please see the associated manuscript. Any use of data
+and plots should refer to Zander et al.
 
 ## Load packages and data
 
-```{r load packages, message=FALSE, warning=FALSE}
+``` r
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 Sys.setenv(LANGUAGE = "en")
 # Check and install pacman if neccesary
@@ -43,7 +28,32 @@ pacman::p_load(
 )
 ```
 
-```{r load data, message=FALSE, warning=FALSE}
+    ## package 'dtw' successfully unpacked and MD5 sums checked
+    ## 
+    ## The downloaded binary packages are in
+    ##  C:\Users\paul.zander\AppData\Local\Temp\Rtmp677i0x\downloaded_packages
+    ## package 'permute' successfully unpacked and MD5 sums checked
+    ## package 'vegan' successfully unpacked and MD5 sums checked
+    ## 
+    ## The downloaded binary packages are in
+    ##  C:\Users\paul.zander\AppData\Local\Temp\Rtmp677i0x\downloaded_packages
+    ## package 'gmp' successfully unpacked and MD5 sums checked
+    ## package 'arrangements' successfully unpacked and MD5 sums checked
+    ## package 'distantia' successfully unpacked and MD5 sums checked
+    ## 
+    ## The downloaded binary packages are in
+    ##  C:\Users\paul.zander\AppData\Local\Temp\Rtmp677i0x\downloaded_packages
+    ## package 'randomForest' successfully unpacked and MD5 sums checked
+    ## package 'gamclass' successfully unpacked and MD5 sums checked
+    ## 
+    ## The downloaded binary packages are in
+    ##  C:\Users\paul.zander\AppData\Local\Temp\Rtmp677i0x\downloaded_packages
+    ## package 'mvnormtest' successfully unpacked and MD5 sums checked
+    ## 
+    ## The downloaded binary packages are in
+    ##  C:\Users\paul.zander\AppData\Local\Temp\Rtmp677i0x\downloaded_packages
+
+``` r
 # Load data
 XRF <- read.csv("ZAB_HiRes_XRF.csv")
 CNS <- read.csv("ZAB_CNS_2020.csv")
@@ -54,7 +64,7 @@ meteo <- read.csv("meteo_1966_2020.csv")
 
 ## Preparing scanning data: Corrections, assigning ages, and aligning datasets
 
-```{r data_setup, fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
+``` r
 # Correction to TOC and TN to account for degration/remineralization using formula from galman et al 2008 (Limnology and Oceanography)
 CNS$year <- as.numeric(CNS$year)
 CNS$toc_p <- as.numeric(CNS$toc_p)
@@ -64,6 +74,11 @@ CNS$tc_corr <- CNS$tic_p + CNS$toc_corr
 
 plot(CNS$tc_corr, CNS$year, type = "l", ylim = c(2000, 2020), main = "Total carbon with and without toc decay correction")
 lines(CNS$tc_p, CNS$year, col = "blue")
+```
+
+![](ZAB_HiRes_workflow_files/figure-gfm/data_setup-1.png)<!-- -->
+
+``` r
 CNS$toc.n_corr <- CNS$toc_corr / CNS$tn_corr
 # Mass accumulation rate caclulation
 CNS$MAR <- CNS$calib.thickness.mm * CNS$dry_bulk_density_gcm3
@@ -138,7 +153,11 @@ test_dtw_P2 <- dtw(x = HiRes_full_scaled$Rmean, y = HiRes_full_scaled$Ca, window
 # Sakoe Chiba band is simple symmetrical window (window width here is equal to the thinnest varve width, i.e. <= 1 year)
 # Testing showed symmetric P2 is most reasonable step pattern, but this could vary
 plot(test_dtw_P2, type = "threeway")
+```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/data_setup-2.png)<!-- -->
+
+``` r
 HSI_regular <- na.omit(Data[, 2:5])
 warp <- warp(test_dtw_P2, index.reference = FALSE)
 HSI_DTW <- HSI_regular[warp, ]
@@ -153,12 +172,13 @@ legend(x = "bottomright",          # Position
        lty = 1,           # Line types
        col = c("black", "red", "blue"),           # Line colors
        lwd = 2)                 # Line width
-
 ```
+
+![](ZAB_HiRes_workflow_files/figure-gfm/data_setup-3.png)<!-- -->
 
 ## Plotting full datasets
 
-```{r full_data, fig.height=6, fig.width=10, message=FALSE, warning=FALSE}
+``` r
 rm(test_dtw_P2)
 # Putting together full, aligned dataset
 HiRes_full[, 12:14] <- HSI_DTW[, c(2:4)]
@@ -168,7 +188,8 @@ HiRes_full_sub1 <- HiRes_full[HiRes_full$`varve_year` >= 1966] # subset for stud
 ```
 
 Plotting XRF and HSI data
-```{r Hires_plot, fig.height=6, fig.width=10, message=FALSE, warning=FALSE}
+
+``` r
 color1 <- c("#c01d11", "2068c9", "#33799b", "#7c9b21", "#a54a0a", "#b3a22e", "#1798a1", "#a62b84", "#0f692d", "#500f8f") # color vector
 XRF_piv <- tidyr::pivot_longer(HiRes_full, cols = c("Ca", "K", "Ti", "Si", "Fe", "S", "Mn", "P"), names_to = "proxy") # make sideways
 xrf_data_plot_depth <- ggplot(XRF_piv, aes(value, comp_depth_mm, color = forcats::as_factor(proxy))) +
@@ -199,8 +220,11 @@ HSI_data_plot_depth <- ggplot(HSI_piv, aes(value, HSI_depth, color = forcats::as
 plot_grid(xrf_data_plot_depth, HSI_data_plot_depth, rel_widths = c(4 / 5, 1 / 5))
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/Hires_plot-1.png)<!-- -->
+
 Plotting CNS, MAR, Cs-137
-```{r cns_plot, fig.height=6, fig.width=10, message=FALSE, warning=FALSE}
+
+``` r
 CNS <- CNS[CNS$year >= 1966 & CNS$year <= 2019, ]
 par(mfrow = c(1, 6), mar = c(5.1, 2, 2, 1))
 plot(CNS$tc_corr, CNS$year, ylim = c(1966, 2020), type = "o", pch = 16, xlim = c(0, 20), ylab = "Year (CE)", xlab = "C (% weight)")
@@ -217,9 +241,13 @@ plot(CNS[is.na(CNS$ZAB_12_1_Cs) == FALSE, ]$ZAB_12_1_Cs, CNS[is.na(CNS$ZAB_12_1_
 lines(CNS$Cs, CNS$year, type = "o", lty = 2, pch = 1)
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/cns_plot-1.png)<!-- -->
+
 ## Varve type classification based on multivariate clustering of sub-annual timeseries
+
 Annual cyle
-```{r annual cycle, fig.height=6, fig.width=10, message=FALSE, warning=FALSE}
+
+``` r
 # First, aligning all data to a fractional varve year scale from 0 to 1
 A <- rep("A", nrow(HiRes_full_sub1))
 HiRes_full_sub1 <- as.data.frame(cbind(A, HiRes_full_sub1))
@@ -263,9 +291,12 @@ ann_cycle1 <- ggplot(year_ag_piv1, aes(year_scale, value, color = forcats::as_fa
 ann_cycle1
 ```
 
-Varve type classification based on multivariate time series clustering of within-varve time series
+![](ZAB_HiRes_workflow_files/figure-gfm/annual%20cycle-1.png)<!-- -->
 
-```{r varve type, fig.height=6, fig.width=10, message=FALSE, warning=FALSE}
+Varve type classification based on multivariate time series clustering
+of within-varve time series
+
+``` r
 # preparing data for dissimilarity calculation: transform, detrend and scale data
 sequence1 <- HiRes_full[, c(4:11, 13, 14)]
 sequence1 <- sequence1 + 1
@@ -292,21 +323,29 @@ hclust_1 <- hclust(as.dist(psi1), method = "ward.D2")
 plot(hclust_1)
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/varve%20type-1.png)<!-- -->
+
 Heatmap of dissimilarity scores
 
-```{r heatmap, fig.height=10, fig.width=10, message=FALSE, warning=FALSE}
+``` r
 psi1_nozero <- psi1
 psi1_nozero[psi1_nozero == 0] <- NA
 heatmap(psi1_nozero, Rowv = as.dendrogram(hclust_1), Colv = as.dendrogram(hclust_1), symm = TRUE, col = viridis(256))
+```
+
+![](ZAB_HiRes_workflow_files/figure-gfm/heatmap-1.png)<!-- -->
+
+``` r
 mycl <- cutree(hclust_1, h = 5.3)
 mycl <- as.data.frame(mycl)
 colnames(mycl) <- c("group")
 mycl$year <- rownames(mycl)
 ```
 
-Bar plot - importance of each element in driving year-to-year dissimilarity
+Bar plot - importance of each element in driving year-to-year
+dissimilarity
 
-```{r dissimilarity, fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
+``` r
 psi.importance <- workflowImportance(
   sequences = sequence1,
   grouping.column = "Varve_Year",
@@ -321,9 +360,11 @@ psi.drop.df <- psi.importance$psi.drop
 barplot(colMeans(psi.drop.df[, 3:12]))
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/dissimilarity-1.png)<!-- -->
+
 Varve Type plots
 
-```{r varve type plots, fig.height=10, fig.width=10, message=FALSE, warning=FALSE}
+``` r
 ag$varve_year <- ag$age_new - 0.3
 ag$varve_year <- floor(ag$varve_year)
 ag$clust_group <- 0
@@ -390,11 +431,13 @@ all_groups_plot2 <- ggplot(groups_all, aes(year_scale)) +
 all_groups_plot2
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/varve%20type%20plots-1.png)<!-- -->
+
 ## Comparing meteorological conditions in years defined by varve types
 
 Boxplot of seasonal weather by varve type
 
-```{r meteo by varve type, fig.height=10, fig.width=6, message=FALSE, warning=FALSE}
+``` r
 ### aggregate meteo data into annual seasonal values
 Ket_meteo <- subset.data.frame(meteo, station == "K?TRZYN")
 # substitute missing wind data with mean values
@@ -595,17 +638,29 @@ groups_plot2 <- ggplot() +
 groups_plot2 + geom_hline(yintercept = 0, linetype = "dashed")
 ```
 
-Assessing normality - some variables show positive skew, however ANOVA is not strongly sensitive to normality assumption, so we proceed
+![](ZAB_HiRes_workflow_files/figure-gfm/meteo%20by%20varve%20type-1.png)<!-- -->
 
-```{r normal, fig.height=6, fig.width=10, message=FALSE, warning=FALSE}
+Assessing normality - some variables show positive skew, however ANOVA
+is not strongly sensitive to normality assumption, so we proceed
+
+``` r
 ## assessing normality
 ggplot(data = meteo_clust_piv, aes(x = value)) +
   stat_density() +
   facet_grid(rows = vars(met_var), cols = vars(variable), scales = "free_y")
+```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/normal-1.png)<!-- -->
+
+``` r
 y <- as.data.frame(meteo_clust[, c(3:17)])
 
 "Shapiro-Wilks test"
+```
+
+    ## [1] "Shapiro-Wilks test"
+
+``` r
 shapiro_test_df <- function(df, bonf = TRUE, alpha = 0.05) {
   l <- lapply(df, shapiro.test)
   s <- do.call("c", lapply(l, "[[", 1))
@@ -628,24 +683,175 @@ shapiro_test_df <- function(df, bonf = TRUE, alpha = 0.05) {
 shapiro_test_df(y, bonf = TRUE)
 ```
 
-Analysis of variance. Null Hypothesis: years associated with the four varve types experienced the same meteorological conditions
-Note: significance code symbols are different here than in the manuscript
+    ## $statistic
+    ##            Temp_MAM.W            Temp_JJA.W            Temp_SON.W 
+    ##             0.9702331             0.9735592             0.9792417 
+    ##            Temp_DJF.W       Temp_MAM_lag1.W      p90_Precip_MAM.W 
+    ##             0.9707698             0.9708621             0.8881146 
+    ##      p90_Precip_JJA.W      p90_Precip_SON.W      p90_Precip_DJF.W 
+    ##             0.9793625             0.9506285             0.9773174 
+    ## p90_Precip_MAM_lag1.W        p90_Wind_MAM.W        p90_Wind_JJA.W 
+    ##             0.8866153             0.9768590             0.9764569 
+    ##        p90_Wind_SON.W        p90_Wind_DJF.W   p90_Wind_MAM_lag1.W 
+    ##             0.9810630             0.9862046             0.9773622 
+    ## 
+    ## $p.value
+    ##            Temp_MAM            Temp_JJA            Temp_SON            Temp_DJF 
+    ##        0.1973847411        0.2751992104        0.4685928590        0.2083880995 
+    ##       Temp_MAM_lag1      p90_Precip_MAM      p90_Precip_JJA      p90_Precip_SON 
+    ##        0.2198589151        0.0001132049        0.4735658925        0.0264979994 
+    ##      p90_Precip_DJF p90_Precip_MAM_lag1        p90_Wind_MAM        p90_Wind_JJA 
+    ##        0.3940685521        0.0001164720        0.3776767268        0.3637323773 
+    ##        p90_Wind_SON        p90_Wind_DJF   p90_Wind_MAM_lag1 
+    ##        0.5469326229        0.7871439074        0.4080749462 
+    ## 
+    ## $significance
+    ##            Temp_MAM            Temp_JJA            Temp_SON            Temp_DJF 
+    ##                "H0"                "H0"                "H0"                "H0" 
+    ##       Temp_MAM_lag1      p90_Precip_MAM      p90_Precip_JJA      p90_Precip_SON 
+    ##                "H0"                "Ha"                "H0"                "H0" 
+    ##      p90_Precip_DJF p90_Precip_MAM_lag1        p90_Wind_MAM        p90_Wind_JJA 
+    ##                "H0"                "Ha"                "H0"                "H0" 
+    ##        p90_Wind_SON        p90_Wind_DJF   p90_Wind_MAM_lag1 
+    ##                "H0"                "H0"                "H0" 
+    ## 
+    ## $method
+    ## [1] "Shapiro-Wilks test with Bonferroni Correction"
 
-```{r ANOVA, fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
+Analysis of variance. Null Hypothesis: years associated with the four
+varve types experienced the same meteorological conditions Note:
+significance code symbols are different here than in the manuscript
+
+``` r
 # Analysis of variance
 y <- as.matrix(meteo_clust[, c(3:17)])
 manova1 <- manova(y ~ as.factor(meteo_clust$Group))
 "multivariate analysis of variance"
+```
+
+    ## [1] "multivariate analysis of variance"
+
+``` r
 summary(manova1)
+```
+
+    ##                              Df Pillai approx F num Df den Df  Pr(>F)   
+    ## as.factor(meteo_clust$Group)  3 1.3648   2.0587     45    111 0.00119 **
+    ## Residuals                    49                                         
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
 "analysis of variance for each meteo variable"
+```
+
+    ## [1] "analysis of variance for each meteo variable"
+
+``` r
 summary.aov(manova1)
 ```
 
+    ##  Response Temp_MAM :
+    ##                              Df Sum Sq Mean Sq F value  Pr(>F)  
+    ## as.factor(meteo_clust$Group)  3  9.634  3.2113  3.7265 0.01717 *
+    ## Residuals                    49 42.226  0.8618                  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ##  Response Temp_JJA :
+    ##                              Df Sum Sq Mean Sq F value  Pr(>F)   
+    ## as.factor(meteo_clust$Group)  3 10.328  3.4427  4.2776 0.00926 **
+    ## Residuals                    49 39.437  0.8048                   
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ##  Response Temp_SON :
+    ##                              Df Sum Sq Mean Sq F value  Pr(>F)  
+    ## as.factor(meteo_clust$Group)  3  9.516  3.1720  3.8796 0.01445 *
+    ## Residuals                    49 40.063  0.8176                  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ##  Response Temp_DJF :
+    ##                              Df Sum Sq Mean Sq F value Pr(>F)
+    ## as.factor(meteo_clust$Group)  3  4.044 1.34791  1.4606 0.2368
+    ## Residuals                    49 45.221 0.92287               
+    ## 
+    ##  Response Temp_MAM_lag1 :
+    ##                              Df Sum Sq Mean Sq F value   Pr(>F)   
+    ## as.factor(meteo_clust$Group)  3 11.214  3.7378  4.4906 0.007316 **
+    ## Residuals                    49 40.786  0.8324                    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ##  Response p90_Precip_MAM :
+    ##                              Df Sum Sq Mean Sq F value Pr(>F)
+    ## as.factor(meteo_clust$Group)  3  4.379 1.45983  1.4974 0.2269
+    ## Residuals                    49 47.772 0.97494               
+    ## 
+    ##  Response p90_Precip_JJA :
+    ##                              Df Sum Sq Mean Sq F value  Pr(>F)  
+    ## as.factor(meteo_clust$Group)  3  6.608 2.20273  2.3277 0.08605 .
+    ## Residuals                    49 46.370 0.94633                  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ##  Response p90_Precip_SON :
+    ##                              Df Sum Sq Mean Sq F value Pr(>F)
+    ## as.factor(meteo_clust$Group)  3  2.901 0.96688  0.9485 0.4245
+    ## Residuals                    49 49.952 1.01943               
+    ## 
+    ##  Response p90_Precip_DJF :
+    ##                              Df Sum Sq Mean Sq F value Pr(>F)
+    ## as.factor(meteo_clust$Group)  3  4.451 1.48374  1.5861 0.2047
+    ## Residuals                    49 45.839 0.93549               
+    ## 
+    ##  Response p90_Precip_MAM_lag1 :
+    ##                              Df Sum Sq Mean Sq F value Pr(>F)
+    ## as.factor(meteo_clust$Group)  3  3.456  1.1519  1.1627 0.3335
+    ## Residuals                    49 48.544  0.9907               
+    ## 
+    ##  Response p90_Wind_MAM :
+    ##                              Df Sum Sq Mean Sq F value   Pr(>F)   
+    ## as.factor(meteo_clust$Group)  3 14.809  4.9363  6.3359 0.001022 **
+    ## Residuals                    49 38.176  0.7791                    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ##  Response p90_Wind_JJA :
+    ##                              Df Sum Sq Mean Sq F value Pr(>F)
+    ## as.factor(meteo_clust$Group)  3  5.054 1.68458  1.7229 0.1745
+    ## Residuals                    49 47.911 0.97777               
+    ## 
+    ##  Response p90_Wind_SON :
+    ##                              Df Sum Sq Mean Sq F value  Pr(>F)  
+    ## as.factor(meteo_clust$Group)  3 10.760  3.5867  4.1827 0.01029 *
+    ## Residuals                    49 42.017  0.8575                  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ##  Response p90_Wind_DJF :
+    ##                              Df Sum Sq Mean Sq F value Pr(>F)
+    ## as.factor(meteo_clust$Group)  3  1.919 0.63973  0.6153 0.6084
+    ## Residuals                    49 50.943 1.03966               
+    ## 
+    ##  Response p90_Wind_MAM_lag1 :
+    ##                              Df Sum Sq Mean Sq F value    Pr(>F)    
+    ## as.factor(meteo_clust$Group)  3 19.538  6.5127  9.8306 3.477e-05 ***
+    ## Residuals                    49 32.462  0.6625                      
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## 1 observation deleted due to missingness
+
 ## Correlations between meteorological data and sedimentary data
 
-Assessing normality - some variables are non-normal, but we proceed with correlation analysis. Emphasis is on understanding relationships, not significance tests. Variables with highest correlations are normally distributed.
+Assessing normality - some variables are non-normal, but we proceed with
+correlation analysis. Emphasis is on understanding relationships, not
+significance tests. Variables with highest correlations are normally
+distributed.
 
-```{r proxy distribution, fig.height=8, fig.width=10, message=FALSE, warning=FALSE}
+``` r
 # calculated annual means for geochemical data
 proxy_ann_mean <- aggregate(HiRes_full[, c(4:11, 13, 14)], list(HiRes_full$varve_year), mean)
 colnames(proxy_ann_mean)[1] <- "varve_year"
@@ -657,13 +863,45 @@ proxy_ann_all_piv <- tidyr::pivot_longer(proxy_ann_all, cols = colnames(proxy_an
 ggplot(data = proxy_ann_all_piv, aes(x = value)) +
   stat_density() +
   facet_wrap(facets = "proxy", nrow = 3, scales = "free")
+```
+
+![](ZAB_HiRes_workflow_files/figure-gfm/proxy%20distribution-1.png)<!-- -->
+
+``` r
 "Shapiro-Wilks test"
+```
+
+    ## [1] "Shapiro-Wilks test"
+
+``` r
 shapiro_test_df(proxy_ann_all, bonf = TRUE)
 ```
 
-Seasonal correlations. Selected correlations from this analysis are displayed in Table 1 of associated manuscript.
+    ## $statistic
+    ##      Ca.W      Fe.W      Mn.W      Si.W       P.W       S.W       K.W      Ti.W 
+    ## 0.9696440 0.9131046 0.9241429 0.9814126 0.9476018 0.9637299 0.9572583 0.9853412 
+    ##    TChl.W    Bphe.W     TIC.W     TOC.W      TC.W      TN.W     MAR.W 
+    ## 0.9112746 0.9838330 0.9713009 0.9797486 0.9418974 0.9751930 0.9360141 
+    ## 
+    ## $p.value
+    ##           Ca           Fe           Mn           Si            P            S 
+    ## 0.1859328483 0.0008274316 0.0021517032 0.5627068717 0.0195840976 0.1012762802 
+    ##            K           Ti         TChl         Bphe          TIC          TOC 
+    ## 0.0519709111 0.7474558174 0.0007096279 0.6760597969 0.2198375108 0.4896885978 
+    ##           TC           TN          MAR 
+    ## 0.0111917053 0.3225689073 0.0063794821 
+    ## 
+    ## $significance
+    ##   Ca   Fe   Mn   Si    P    S    K   Ti TChl Bphe  TIC  TOC   TC   TN  MAR 
+    ## "H0" "Ha" "Ha" "H0" "H0" "H0" "H0" "H0" "Ha" "H0" "H0" "H0" "H0" "H0" "H0" 
+    ## 
+    ## $method
+    ## [1] "Shapiro-Wilks test with Bonferroni Correction"
 
-```{r seasonal correlations, fig.height=6, fig.width=6, message=FALSE, warning=FALSE}
+Seasonal correlations. Selected correlations from this analysis are
+displayed in Table 1 of associated manuscript.
+
+``` r
 meteo_sub1 <- meteo_ann_mean[, c(5:21)] # seasonal meteo data
 meteo_sub1[54, c(5, 11, 16)] <- colMeans(meteo_sub1[-54, ])[c(5, 11, 16)] # replacing missing data with means
 
@@ -694,9 +932,11 @@ pval <- t(pval)
 corrplot(cor_matrix_seasonal, method = "color", p.mat = pval, sig.level = c(0.01, 0.05, 0.1), pch = c("."), insig = "label_sig")
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/seasonal%20correlations-1.png)<!-- -->
+
 Correlations with monthly meteo data and full correlation plot
 
-```{r monthly correlations, fig.height=10, fig.width=10, message=FALSE, warning=FALSE}
+``` r
 meteo_sub2 <- meteo_ann_mean[, 22:66] # monthly meteo data
 meteo_sub2[54, c(13:15, 28:30, 43:45)] <- colMeans(meteo_sub2[-54, ])[c(13:15, 28:30, 43:45)] # replacing missing data with means
 
@@ -725,12 +965,45 @@ corrplot(cor_matrix_months[, 31:45], method = "color", p.mat = pval_2[, 31:45], 
 corrplot(cor_matrix_seasonal[,c(-5,-11,-16)], method = "color", p.mat = pval[,c(-5,-11,-16)], sig.level = c(0.01, 0.05, 0.1), pch = c("."), insig = "label_sig")
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/monthly%20correlations-1.png)<!-- -->
+
 ### Redundancy analysis (RDA)
 
-```{r RDA, fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+``` r
 rda_1 <- rda(proxy_ann_all, meteo_clust[, c(3:6, 8:11, 13:16)], scale = TRUE)
 RsquareAdj(rda_1)
+```
+
+    ## $r.squared
+    ## [1] 0.468402
+    ## 
+    ## $adj.r.squared
+    ## [1] 0.3128123
+
+``` r
 summary(rda_1)$cont
+```
+
+    ## $importance
+    ## Importance of components:
+    ##                        RDA1    RDA2    RDA3    RDA4    RDA5    RDA6     RDA7
+    ## Eigenvalue            4.245 0.92460 0.58711 0.52234 0.26917 0.18465 0.142550
+    ## Proportion Explained  0.283 0.06164 0.03914 0.03482 0.01794 0.01231 0.009503
+    ## Cumulative Proportion 0.283 0.34465 0.38379 0.41861 0.43655 0.44886 0.458366
+    ##                           RDA8     RDA9    RDA10     RDA11     RDA12    PC1
+    ## Eigenvalue            0.087522 0.032040 0.022689 0.0062269 0.0020600 2.2679
+    ## Proportion Explained  0.005835 0.002136 0.001513 0.0004151 0.0001373 0.1512
+    ## Cumulative Proportion 0.464201 0.466337 0.467850 0.4682646 0.4684020 0.6196
+    ##                           PC2    PC3     PC4     PC5     PC6     PC7     PC8
+    ## Eigenvalue            1.43923 1.0964 0.78670 0.63538 0.54924 0.37014 0.27920
+    ## Proportion Explained  0.09595 0.0731 0.05245 0.04236 0.03662 0.02468 0.01861
+    ## Cumulative Proportion 0.71554 0.7886 0.84109 0.88344 0.92006 0.94474 0.96335
+    ##                          PC9     PC10     PC11     PC12     PC13     PC14
+    ## Eigenvalue            0.2085 0.142169 0.094810 0.052231 0.037459 0.014580
+    ## Proportion Explained  0.0139 0.009478 0.006321 0.003482 0.002497 0.000972
+    ## Cumulative Proportion 0.9773 0.986728 0.993049 0.996531 0.999028 1.000000
+
+``` r
 plot(rda_1, scaling = 3, display = c("cn", "sp"))
 spe.sc <- scores(rda_1, choices = 1:2, scaling = 3, display = "sp")
 arrows(0, 0, spe.sc[, 1], spe.sc[, 2], length = 0.1, lty = 1, col = "red", lwd = 1)
@@ -742,18 +1015,45 @@ points(points.rda[meteo_clust$Group == 3, ], col = "#009e73", pch = 16) # VT-3
 points(points.rda[meteo_clust$Group == 4, ], col = "#f0e442", pch = 16) # VT-4
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/RDA-1.png)<!-- -->
+
 ## Generalized Additive Models (GAMs)
 
 ### Spring and Summer Temperature (MAMJJA) model
 
-```{r Temp_GAM1, fig.height=6, fig.width=8, message=FALSE, warning=FALSE}
+``` r
 VT <- as.data.frame(rev(mycl$group))
 Annual_data_comb <- cbind(proxy_ann_all, meteo_ann_mean)
 Annual_data_comb$VT <- VT[1:54,1]
 # MAMJJA Temp GAM
 gam_MAMJJA_temp <- gam(Temp_MAMJJA ~ s(TC) + s(Ti), data = Annual_data_comb, method = "REML", select = TRUE)
 summary(gam_MAMJJA_temp)
+```
 
+    ## 
+    ## Family: gaussian 
+    ## Link function: identity 
+    ## 
+    ## Formula:
+    ## Temp_MAMJJA ~ s(TC) + s(Ti)
+    ## 
+    ## Parametric coefficients:
+    ##             Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept) 12.08264    0.09249   130.6   <2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Approximate significance of smooth terms:
+    ##          edf Ref.df     F  p-value    
+    ## s(TC) 0.9616      9 2.781 4.47e-06 ***
+    ## s(Ti) 0.9065      9 1.077  0.00184 ** 
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## R-sq.(adj) =  0.548   Deviance explained = 56.4%
+    ## -REML = 59.676  Scale est. = 0.46196   n = 54
+
+``` r
 pred_MAMJJA_temp <- as_tibble(as.data.frame(predict(gam_MAMJJA_temp, se.fit = TRUE, unconditional = TRUE)))
 pred_MAMJJA_temp <- bind_cols(Annual_data_comb, pred_MAMJJA_temp) %>%
   mutate(upr = fit + 2 * se.fit, lwr = fit - 2 * se.fit)
@@ -773,28 +1073,71 @@ MAMJJA_temp_plot <- ggplot(Annual_data_comb, aes(x = varve_year, y = Temp_MAMJJA
   labs(x = "varve_year", y = "MAMJJA Temp (°C)") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 MAMJJA_temp_plot
+```
+
+![](ZAB_HiRes_workflow_files/figure-gfm/Temp_GAM1-1.png)<!-- -->
+
+``` r
 plot(gam_MAMJJA_temp, pages = 1, all.terms = TRUE, shade = TRUE, residuals = TRUE, pch = 1, cex = 1, seWithMean = TRUE, shade.col = "lightblue")
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/Temp_GAM1-2.png)<!-- -->
+
 Diagnostic plots
 
-```{r Temp_GAM2, fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+``` r
 par(mfrow = c(3, 2))
 gam.check(gam_MAMJJA_temp)
+```
+
+![](ZAB_HiRes_workflow_files/figure-gfm/Temp_GAM2-1.png)<!-- -->
+
+    ## 
+    ## Method: REML   Optimizer: outer newton
+    ## full convergence after 12 iterations.
+    ## Gradient range [-2.820061e-05,1.069222e-05]
+    ## (score 59.67644 & scale 0.4619602).
+    ## Hessian positive definite, eigenvalue range [1.536549e-06,26.51675].
+    ## Model rank =  19 / 19 
+    ## 
+    ## Basis dimension (k) checking results. Low p-value (k-index<1) may
+    ## indicate that k is too low, especially if edf is close to k'.
+    ## 
+    ##          k'   edf k-index p-value
+    ## s(TC) 9.000 0.962    1.14    0.74
+    ## s(Ti) 9.000 0.906    0.98    0.40
+
+``` r
 acf(gam_MAMJJA_temp$residuals, lag.max = 36, main = "ACF")
 pacf(gam_MAMJJA_temp$residuals, lag.max = 36, main = "pACF")
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/Temp_GAM2-2.png)<!-- -->
+
 10-fold cross-validated RMSE
 
-```{r Temp_GAM_CV_RMSE, fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+``` r
 CV_temp <- CVgam(formula = Temp_MAMJJA ~ s(TC) + s(Ti), data = Annual_data_comb, method = "REML")
+```
+
+    ##    GAMscale CV-mse-GAM  
+    ##      0.4577      0.4797
+
+``` r
 paste("CV-RMSE (°C) = ", round(sqrt(CV_temp$cvscale), digits = 2))
+```
+
+    ## [1] "CV-RMSE (°C) =  0.69"
+
+``` r
 paste("CV-RMSE (%) = ", round(100 * sqrt(CV_temp$cvscale) / (max(Annual_data_comb$Temp_MAMJJA) - min(Annual_data_comb$Temp_MAMJJA)), digits = 2))
 ```
+
+    ## [1] "CV-RMSE (%) =  14.42"
+
 Split-period calibration and validation (MAMJJA Temperature)
 
-```{r Temp_GAM_split, fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+``` r
 # preparing summary table
 Annual_data_comb_cal <- Annual_data_comb[Annual_data_comb$varve_year <= 1992, ]
 Annual_data_comb_ver <- Annual_data_comb[Annual_data_comb$varve_year > 1992, ]
@@ -831,7 +1174,13 @@ RMSEP_MAMJJA_temp_2 <- sqrt(mean((Annual_data_comb_cal$Temp_MAMJJA - pred_MAMJJA
 split_period_temp$RMSE[2] <- paste(round(RMSEP_MAMJJA_temp_2, digits = 3), " (", round(100 * RMSEP_MAMJJA_temp_2 / (max(Annual_data_comb$Temp_MAMJJA) - min(Annual_data_comb$Temp_MAMJJA)), digits = 3), "%)")
 
 split_period_temp
+```
 
+    ##   cal_period val_period  Rsqr_adj        RE        CE               RMSE
+    ## 1  1966-1992  1993-2019 0.3925724 0.7499937 0.2982079 0.677  ( 14.097 %)
+    ## 2  1993-2019  1966-1992 0.3467264 0.6682707 0.1543255 0.803  ( 16.713 %)
+
+``` r
 # split period plot
 pred_MAMJJA_temp_ver_3 <- as_tibble(as.data.frame(predict(gam_MAMJJA_temp_ver, newdata = Annual_data_comb, se.fit = TRUE, unconditional = TRUE)))
 pred_MAMJJA_temp_ver_3 <- bind_cols(Annual_data_comb, pred_MAMJJA_temp_ver_3)
@@ -858,16 +1207,43 @@ gam_MAMJJA_temp_split <- ggplot(Annual_data_comb, aes(x = varve_year, y = Temp_M
 gam_MAMJJA_temp_split
 ```
 
-### March-December wind days (> 7 m/s) model
+![](ZAB_HiRes_workflow_files/figure-gfm/Temp_GAM_split-1.png)<!-- -->
 
-```{r Wind_GAM1, fig.height=6, fig.width=8, message=FALSE, warning=FALSE}
+### March-December wind days (\> 7 m/s) model
+
+``` r
 # removing missing years
 wind_data_comb <- Annual_data_comb[Annual_data_comb$varve_year != 1994 & Annual_data_comb$varve_year != 1993, ]
 
 gam_wind_days_MAR_DEC <- gam(MAR_DEC_Wind_Days ~ s(MAR) + s(Si), data = wind_data_comb, method = "REML", select = TRUE)
 
 summary(gam_wind_days_MAR_DEC)
+```
 
+    ## 
+    ## Family: gaussian 
+    ## Link function: identity 
+    ## 
+    ## Formula:
+    ## MAR_DEC_Wind_Days ~ s(MAR) + s(Si)
+    ## 
+    ## Parametric coefficients:
+    ##             Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)  13.3462     0.8181   16.31   <2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Approximate significance of smooth terms:
+    ##           edf Ref.df     F  p-value    
+    ## s(MAR) 0.9192      9 1.260 0.000817 ***
+    ## s(Si)  0.9065      9 1.074 0.001750 ** 
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## R-sq.(adj) =  0.478   Deviance explained = 49.6%
+    ## -REML = 167.48  Scale est. = 34.804    n = 52
+
+``` r
 pred_wind_days_MAR_DEC <- as_tibble(as.data.frame(predict(gam_wind_days_MAR_DEC, se.fit = TRUE, unconditional = TRUE)))
 pred_wind_days_MAR_DEC <- bind_cols(wind_data_comb, pred_wind_days_MAR_DEC) %>%
   mutate(upr = fit + 2 * se.fit, lwr = fit - 2 * se.fit)
@@ -886,29 +1262,71 @@ wind_days_MAR_DEC_plot <- ggplot(wind_data_comb, aes(x = varve_year, y = MAR_DEC
   ) +
   labs(x = "Year", y = "# of days with mean wind speed > 7 m/s")
 wind_days_MAR_DEC_plot
+```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/Wind_GAM1-1.png)<!-- -->
+
+``` r
 plot(gam_wind_days_MAR_DEC, pages = 1, shade = TRUE, residuals = TRUE, pch = 1, cex = 1, seWithMean = TRUE, shade.col = "lightblue")
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/Wind_GAM1-2.png)<!-- -->
+
 Diagnostic plots
 
-```{r Wind_GAM2, fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+``` r
 par(mfrow = c(3, 2))
 gam.check(gam_wind_days_MAR_DEC)
+```
+
+![](ZAB_HiRes_workflow_files/figure-gfm/Wind_GAM2-1.png)<!-- -->
+
+    ## 
+    ## Method: REML   Optimizer: outer newton
+    ## full convergence after 13 iterations.
+    ## Gradient range [-6.492196e-05,0.0001896789]
+    ## (score 167.4796 & scale 34.80371).
+    ## Hessian positive definite, eigenvalue range [2.334065e-05,25.51643].
+    ## Model rank =  19 / 19 
+    ## 
+    ## Basis dimension (k) checking results. Low p-value (k-index<1) may
+    ## indicate that k is too low, especially if edf is close to k'.
+    ## 
+    ##           k'   edf k-index p-value
+    ## s(MAR) 9.000 0.919    1.34    0.99
+    ## s(Si)  9.000 0.906    0.99    0.43
+
+``` r
 acf(gam_wind_days_MAR_DEC$residuals, lag.max = 36, main = "ACF")
 pacf(gam_wind_days_MAR_DEC$residuals, lag.max = 36, main = "pACF")
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/Wind_GAM2-2.png)<!-- -->
+
 10-fold cross-validated RMSE
 
-```{r Wind_GAM_CV_RMSE, fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+``` r
 CV_wind <- CVgam(formula = MAR_DEC_Wind_Days ~ s(MAR) + s(Si), data = wind_data_comb, method = "REML")
+```
+
+    ##    GAMscale CV-mse-GAM  
+    ##     34.8747     36.8989
+
+``` r
 paste("CV-RMSE (days) = ", round(sqrt(CV_wind$cvscale), digits = 2))
+```
+
+    ## [1] "CV-RMSE (days) =  6.07"
+
+``` r
 paste("CV-RMSE (%) = ", round(100 * sqrt(CV_wind$cvscale) / (max(wind_data_comb$MAR_DEC_Wind_Days) - min(wind_data_comb$MAR_DEC_Wind_Days)), digits = 2))
 ```
+
+    ## [1] "CV-RMSE (%) =  18.98"
+
 Split-period calibration and validation
 
-```{r Wind_GAM_split, fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+``` r
 wind_data_comb_cal <- wind_data_comb[wind_data_comb$varve_year <= 1991, ]
 wind_data_comb_ver <- wind_data_comb[wind_data_comb$varve_year > 1991, ]
 
@@ -944,7 +1362,16 @@ RMSEP_wind_days_2 <- sqrt(mean((wind_data_comb_cal$MAR_DEC_Wind_Days - pred_wind
 split_period_wind$RMSE[2] <- paste(round(RMSEP_wind_days_2, digits = 3), " (", round(100 * RMSEP_wind_days_2 / (max(wind_data_comb$MAR_DEC_Wind_Days) - min(wind_data_comb$MAR_DEC_Wind_Days)), digits = 3), "%)")
 
 split_period_wind
+```
 
+    ##        cal_period      val_period  Rsqr_adj         RE        CE
+    ## 1       1966-1991 1992, 1995-2019 0.2999138  0.6114674 -3.944040
+    ## 2 1992, 1995-2019       1966-1991 0.1497534 -0.2830619 -3.220727
+    ##                  RMSE
+    ## 1  7.343  ( 22.946 %)
+    ## 2 15.353  ( 47.978 %)
+
+``` r
 # split period plot
 pred_wind_days_ver_3 <- as_tibble(as.data.frame(predict(gam_wind_days_MAR_DEC_ver, newdata = wind_data_comb, se.fit = TRUE, unconditional = TRUE)))
 pred_wind_days_ver_3 <- bind_cols(wind_data_comb, pred_wind_days_ver_3)
@@ -971,19 +1398,113 @@ gam_wind_days_MAR_DEC_split <- ggplot(wind_data_comb, aes(x = varve_year, y = MA
 gam_wind_days_MAR_DEC_split
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/Wind_GAM_split-1.png)<!-- -->
+
 ## Supplementary correlation plots
 
-```{r corr_plots, fig.height=8, fig.width=8, message=FALSE, warning=FALSE}
+``` r
 "Annual resolution proxy data"
+```
+
+    ## [1] "Annual resolution proxy data"
+
+``` r
 corrplot(cor(proxy_ann_all), addCoef.col = "black", number.cex = 10 / ncol(proxy_ann_all))
+```
+
+![](ZAB_HiRes_workflow_files/figure-gfm/corr_plots-1.png)<!-- -->
+
+``` r
 "Full resolution (60 um) scanning proxy data"
+```
+
+    ## [1] "Full resolution (60 um) scanning proxy data"
+
+``` r
 corrplot(cor(HiRes_full[HiRes_full$varve_year >= 1966, 4:14]), addCoef.col = "black", number.cex = 10 / ncol(HiRes_full[, 4:14]))
+```
+
+![](ZAB_HiRes_workflow_files/figure-gfm/corr_plots-2.png)<!-- -->
+
+``` r
 "Seasonal meteo data"
+```
+
+    ## [1] "Seasonal meteo data"
+
+``` r
 corrplot(cor(meteo_sub1), addCoef.col = "black", number.cex = 10 / ncol(meteo_sub1))
 ```
 
+![](ZAB_HiRes_workflow_files/figure-gfm/corr_plots-3.png)<!-- -->
+
 # Session info
-```{r}
+
+``` r
 Sys.Date()
+```
+
+    ## [1] "2023-12-20"
+
+``` r
 sessionInfo()
 ```
+
+    ## R version 4.3.1 (2023-06-16 ucrt)
+    ## Platform: x86_64-w64-mingw32/x64 (64-bit)
+    ## Running under: Windows 10 x64 (build 19044)
+    ## 
+    ## Matrix products: default
+    ## 
+    ## 
+    ## locale:
+    ## [1] LC_COLLATE=English_Germany.utf8  LC_CTYPE=English_Germany.utf8   
+    ## [3] LC_MONETARY=English_Germany.utf8 LC_NUMERIC=C                    
+    ## [5] LC_TIME=English_Germany.utf8    
+    ## 
+    ## time zone: Europe/Berlin
+    ## tzcode source: internal
+    ## 
+    ## attached base packages:
+    ## [1] grid      stats     graphics  grDevices utils     datasets  methods  
+    ## [8] base     
+    ## 
+    ## other attached packages:
+    ##  [1] mvnormtest_0.1-9  cowplot_1.1.1     gamclass_0.62.5   gridExtra_2.3    
+    ##  [5] mgcv_1.8-42       nlme_3.1-160      reshape2_1.4.4    pracma_2.4.2     
+    ##  [9] viridis_0.6.3     viridisLite_0.4.2 distantia_1.0.2   psych_2.2.9      
+    ## [13] corrplot_0.92     vegan_2.6-4       lattice_0.21-8    permute_0.9-7    
+    ## [17] lineup_0.42       forcats_0.5.2     stringr_1.5.0     dplyr_1.1.2      
+    ## [21] purrr_1.0.1       readr_2.1.4       tidyr_1.3.0       tibble_3.2.1     
+    ## [25] tidyverse_1.3.2   ggplot2_3.4.2     dtw_1.23-1        proxy_0.4-27     
+    ## [29] data.table_1.14.8 pacman_0.5.1     
+    ## 
+    ## loaded via a namespace (and not attached):
+    ##  [1] DBI_1.1.3            mnormt_2.1.1         deldir_1.0-9        
+    ##  [4] readxl_1.4.1         rlang_1.1.1          magrittr_2.0.3      
+    ##  [7] compiler_4.3.1       png_0.1-8            vctrs_0.6.2         
+    ## [10] maps_3.4.1           rvest_1.0.3          pkgconfig_2.0.3     
+    ## [13] crayon_1.5.2         fastmap_1.1.1        ellipsis_0.3.2      
+    ## [16] backports_1.4.1      dbplyr_2.2.1         labeling_0.4.2      
+    ## [19] utf8_1.2.3           rmarkdown_2.21       tzdb_0.4.0          
+    ## [22] haven_2.5.1          xfun_0.39            reprex_2.0.2        
+    ## [25] randomForest_4.7-1.1 jsonlite_1.8.4       highr_0.10          
+    ## [28] gmp_0.7-3            jpeg_0.1-10          broom_1.0.1         
+    ## [31] parallel_4.3.1       cluster_2.1.4        R6_2.5.1            
+    ## [34] stringi_1.7.12       RColorBrewer_1.1-3   rpart_4.1.19        
+    ## [37] lubridate_1.9.2      cellranger_1.1.0     Rcpp_1.0.10         
+    ## [40] assertthat_0.2.1     iterators_1.0.14     knitr_1.43          
+    ## [43] modelr_0.1.9         fields_14.1          Matrix_1.5-1        
+    ## [46] splines_4.3.1        timechange_0.2.0     tidyselect_1.2.0    
+    ## [49] rstudioapi_0.14      yaml_2.3.7           doParallel_1.0.17   
+    ## [52] codetools_0.2-19     arrangements_1.1.9   plyr_1.8.8          
+    ## [55] withr_2.5.0          evaluate_0.21        xml2_1.3.3          
+    ## [58] pillar_1.9.0         foreach_1.5.2        generics_0.1.3      
+    ## [61] hms_1.1.3            munsell_0.5.0        scales_1.2.1        
+    ## [64] glue_1.6.2           tools_4.3.1          interp_1.1-3        
+    ## [67] fs_1.6.2             dotCall64_1.0-2      latticeExtra_0.6-30 
+    ## [70] colorspace_2.1-0     googlesheets4_1.0.1  googledrive_2.0.0   
+    ## [73] cli_3.6.1            spam_2.9-1           fansi_1.0.4         
+    ## [76] gargle_1.2.1         gtable_0.3.3         digest_0.6.31       
+    ## [79] farver_2.1.1         htmltools_0.5.5      lifecycle_1.0.3     
+    ## [82] httr_1.4.6           MASS_7.3-58.1
