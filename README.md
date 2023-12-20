@@ -6,8 +6,7 @@ Any use of the material included here should refer to Zander et al (2021, Climat
 
 This archive contains the following files:
 
-**ZAB_HiRes_workflow.nb.html** – This R Markdown document includes the code used to create plots and calculate statistics reported in the manuscript. 
-It is possible to download the full R code from this file. The code can then run if placed in the same file directory as the data files listed below.
+**ZAB_HiRes_workflow.md** – This R Markdown document includes the code used to create plots and calculate statistics reported in the manuscript with plots embedded within. 
 
 **Chrono_Tornado.csv** – This file contains varve count results specifically referenced to images of biogeochemical scanning data (μXRF elements and HSI pigments).
 
